@@ -10,6 +10,9 @@ if (navigator.mediaDevices) {
     var mediaRecorder = new MediaRecorder(stream, {mimeType : 'audio/webm', codecs : "opus"});
     mediaRecorder.ondataavailable = function(e){
       chunks.push(e.data);
+      console.log(chunks);
+      processAudioChunk();
+      console.log(chunks);
     }
     
 
@@ -25,7 +28,7 @@ if (navigator.mediaDevices) {
         record.style.color = "";
       }
       else {
-        mediaRecorder.start();
+        mediaRecorder.start(5000);
         console.log(mediaRecorder.state);
         console.log("recorder started");
         record.style.background = "red";
@@ -34,47 +37,40 @@ if (navigator.mediaDevices) {
       recording = !recording;
     }
 
-    setInterval(()=>{
-      if (recording) {
-        processAudioChunk()
-      }
-    }, 2000);
-
     function processAudioChunk() {
       console.log("data available after MediaRecorder.stop() called.");
-
       var clipName = Date.now();
+      
+      // var clipContainer = document.createElement('article');
+      // var clipLabel = document.createElement('p');
+      // var audio = document.createElement('audio');
+      // var deleteButton = document.createElement('button');
 
-      var clipContainer = document.createElement('article');
-      var clipLabel = document.createElement('p');
-      var audio = document.createElement('audio');
-      var deleteButton = document.createElement('button');
+      // clipContainer.classList.add('clip');
+      // audio.setAttribute('controls', '');
+      // deleteButton.innerHTML = "Delete";
+      // clipLabel.innerHTML = clipName;
 
-      clipContainer.classList.add('clip');
-      audio.setAttribute('controls', '');
-      deleteButton.innerHTML = "Delete";
-      clipLabel.innerHTML = clipName;
-
-      clipContainer.appendChild(audio);
-      clipContainer.appendChild(clipLabel);
-      clipContainer.appendChild(deleteButton);
-      soundClips.appendChild(clipContainer);
-      audio.controls = true;
+      // clipContainer.appendChild(audio);
+      // clipContainer.appendChild(clipLabel);
+      // clipContainer.appendChild(deleteButton);
+      // soundClips.appendChild(clipContainer);
+      // audio.controls = true;
       
       var audioStreamMeta = stream.getAudioTracks()[0].getSettings();
       console.log(audioStreamMeta);
       console.log(chunks);
       var blob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus'});
       console.log(blob);
-      chunks = [];
+      // chunks = [];
       var audioURL = URL.createObjectURL(blob);
       
-      audio.src = audioURL;
+      // audio.src = audioURL;
 
-      deleteButton.onclick = function(e) {
-        evtTgt = e.target;
-        evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
-      }
+      // deleteButton.onclick = function(e) {
+      //   evtTgt = e.target;
+      //   evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+      // }
 
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "transcribeAudio", true);
@@ -86,20 +82,27 @@ if (navigator.mediaDevices) {
       console.log(audioStreamMeta.frameRate);
       console.log(audioStreamMeta.width);
       xhttp.send(data);
+      
       xhttp.onreadystatechange = function() {
           if (this.readyState == 4 && this.status == 200) {
-            var audiometa = document.createElement('audiometa');
-            audiometa.innerHTML = this.responseText;
-            clipContainer.appendChild(audiometa);    
+            // var audiometa = document.createElement('audiometa');
+            // audiometa.innerHTML = this.responseText;
+            // clipContainer.appendChild(audiometa);    
+            document.getElementById("transcribe-text").innerHTML = this.responseText;
           }
       };
 
-      deleteButton.onclick = function(e) {
-        evtTgt = e.target;
-        evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
-      }
+      // deleteButton.onclick = function(e) {
+      //   evtTgt = e.target;
+      //   evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+      // }
     }
 
+    // setInterval(()=>{
+    //   if (recording) {
+    //     processAudioChunk()
+    //   }
+    // }, 2000);
     
 
     
