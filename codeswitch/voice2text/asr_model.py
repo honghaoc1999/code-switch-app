@@ -4,8 +4,6 @@ import soundfile as sf
 from scipy.io.wavfile import read
 import numpy as np
 
-SAVED_MODEL_PATH = "/Users/Chen/.cache/huggingface/hub/a859443a82cbdaec31886961566f75b08a4a44ead30ce1608b506f0582b18902.274e30cb59cb39875f0e4f14d02de67cd3491470716f1be9205ab9f86265448d.h5"
-
 class _Keyword_Spotting_Service:
     """Singleton class for keyword spotting inference with trained models.
     :param model: Trained model
@@ -16,7 +14,7 @@ class _Keyword_Spotting_Service:
     _instance = None
 
 
-    def predict(self, file_path):
+    def predict(self, file_path, lastBlobStamp):
         """
         :param file_path (str): Path to audio file to predict
         :return predicted_keyword (str): Keyword predicted by the model
@@ -27,15 +25,18 @@ class _Keyword_Spotting_Service:
         #     rate = f.getframerate()
         #     duration = frames / float(rate)
         #     print(duration)
-        audio_bytes = read(file_path)[1]
         
+        audio_bytes = read(file_path)[1][int(lastBlobStamp * 2.47):]
+        print("look here", lastBlobStamp, len(audio_bytes))
         audio_bytes = np.array(audio_bytes)
         x = torch.FloatTensor(audio_bytes)
+        print(self.tokenizer)
         input_values = self.tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
         logits = self.model(input_values).logits
         tokens = torch.argmax(logits, axis=-1)
         texts = self.tokenizer.batch_decode(tokens)
-        return texts
+        print(texts)
+        return texts, len(audio_bytes)
 
     def preprocess(self, file_path, num_mfcc=13, n_fft=2048, hop_length=512):
         """Extract MFCCs from audio file.
@@ -58,9 +59,13 @@ def Keyword_Spotting_Service():
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
-        _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-base-960h')
-        _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base-960h')
-        print("model print", _Keyword_Spotting_Service.model)
+        _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn')
+        _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn')
+        # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-base-960h')
+        # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base-960h')
+        # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
+        # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
+        print("LOADING MODEL")
     return _Keyword_Spotting_Service._instance
 
 

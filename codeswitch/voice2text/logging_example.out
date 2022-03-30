@@ -1,0 +1,133 @@
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.request:Not Found: /favicon.ico
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+WARNING:django.security.csrf:Forbidden (CSRF token missing or incorrect.): /transcribeAudio
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/config.json HTTP/1.1" 200 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/pytorch_model.bin HTTP/1.1" 302 0
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/18b4e56c-b038-11ec-8928-0a0791d41193.webm'
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/18b4e56d-b038-11ec-8928-0a0791d41193.webm'
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/19f737cc-b038-11ec-8928-0a0791d41193.webm'
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/preprocessor_config.json HTTP/1.1" 200 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/tokenizer_config.json HTTP/1.1" 404 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/config.json HTTP/1.1" 200 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/vocab.json HTTP/1.1" 200 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/tokenizer_config.json HTTP/1.1" 404 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/added_tokens.json HTTP/1.1" 404 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn/resolve/main/config.json HTTP/1.1" 200 0
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/1a40192e-b038-11ec-8928-0a0791d41193.webm'
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/19f737cd-b038-11ec-8928-0a0791d41193.webm'
+ERROR:django.request:Internal Server Error: /transcribeAudio
+Traceback (most recent call last):
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/ubuntu/.local/lib/python3.6/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/ubuntu/code-switch-v2/code-switch-app/codeswitch/voice2text/views.py", line 41, in transcribeAudio
+    with open(webmFilePath, 'wb') as f_aud:
+FileNotFoundError: [Errno 2] No such file or directory: 'voice2text/audios/1a5a7cc4-b038-11ec-8928-0a0791d41193.webm'
