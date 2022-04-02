@@ -83,7 +83,7 @@ if (navigator.mediaDevices) {
         record.style.color = "";
       }
       else {
-        mediaRecorder.start(1000);
+        mediaRecorder.start(3000);
         console.log(mediaRecorder.state);
         console.log("recorder started");
         record.style.background = "red";

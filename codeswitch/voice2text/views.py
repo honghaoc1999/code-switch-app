@@ -10,8 +10,8 @@ import voice2text.asr_model as asr_model
 import os
 import uuid
 import logging
-LOG_FILENAME = 'voice2text/logging_example.out'
-logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
+# LOG_FILENAME = 'voice2text/logging_example.out'
+# logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 print("reached view")
 # Create your views here.
 def recorderView(request):
