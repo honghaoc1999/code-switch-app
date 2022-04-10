@@ -3,6 +3,8 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 import soundfile as sf
 from scipy.io.wavfile import read
 import numpy as np
+from pydub import AudioSegment
+from pydub.silence import split_on_silence
 
 class _Keyword_Spotting_Service:
     """Singleton class for keyword spotting inference with trained models.
@@ -14,7 +16,62 @@ class _Keyword_Spotting_Service:
     _instance = None
 
 
-    def predict(self, file_path, lastBlobStamp):
+    def preprocess(self, file_path, num_mfcc=13, n_fft=2048, hop_length=512):
+        """Extract MFCCs from audio file.
+        :param file_path (str): Path of audio file
+        :param num_mfcc (int): # of coefficients to extract
+        :param n_fft (int): Interval we consider to apply STFT. Measured in # of samples
+        :param hop_length (int): Sliding window for STFT. Measured in # of samples
+        :return MFCCs (ndarray): 2-dim array with MFCC data of shape (# time steps, # coefficients)
+        """
+
+        # Load your audio.
+        song = AudioSegment.from_wav(file_path)
+        def match_target_amplitude(aChunk, target_dBFS):
+            ''' Normalize given audio chunk '''
+            change_in_dBFS = target_dBFS - aChunk.dBFS
+            return aChunk.apply_gain(change_in_dBFS)
+
+        
+        # Split track where the silence is 2 seconds or more and get chunks using 
+        # the imported function.
+        chunks = split_on_silence (
+            # Use the loaded audio.
+            song, 
+            # Specify that a silent chunk must be at least 2 seconds or 2000 ms long.
+            min_silence_len = 500,
+            silence_thresh = song.dBFS - 16
+            # Consider a chunk silent if it's quieter than -16 dBFS.
+            # (You may want to adjust this parameter.)
+            
+        )
+        print("audio", len(song), "chunks", chunks, "last chunk", len(chunks[-1]))
+        # chunk_lens = map(len, chunks)
+        ratio = len(chunks[-1])/len(song)
+        print("ratio", ratio)
+        return ratio
+        
+
+        # Process each chunk with your parameters
+        # for i, chunk in enumerate(chunks):
+        #     # Create a silence chunk that's 0.5 seconds (or 500 ms) long for padding.
+        #     silence_chunk = AudioSegment.silent(duration=500)
+
+        #     # Add the padding chunk to beginning and end of the entire chunk.
+        #     audio_chunk = silence_chunk + chunk + silence_chunk
+
+        #     # Normalize the entire chunk.
+        #     normalized_chunk = match_target_amplitude(audio_chunk, -20.0)
+
+        #     # Export the audio chunk with new bitrate.
+        #     print("Exporting chunk{0}.mp3.".format(i))
+        #     normalized_chunk.export(
+        #         ".//chunk{0}.mp3".format(i),
+        #         bitrate = "192k",
+        #         format = "mp3"
+        #     )
+
+    def predict(self, file_path, lastBlobStamp, runFull):
         """
         :param file_path (str): Path to audio file to predict
         :return predicted_keyword (str): Keyword predicted by the model
@@ -25,12 +82,22 @@ class _Keyword_Spotting_Service:
         #     rate = f.getframerate()
         #     duration = frames / float(rate)
         #     print(duration)
-        
-        audio_bytes = read(file_path)[1][int(lastBlobStamp * 2.47):]
-        print("look here", lastBlobStamp, len(audio_bytes))
+        # ratio = self.preprocess(file_path)
+        full_audio = read(file_path)[1]
+
+        # print("last chunk len: ", last_chunk_len, " whole file len: ", len(read(file_path)[1]))
+        # print("compare: ", len(read(file_path)[1]), lastBlobStamp)
+        if runFull == 'true':
+            print("reached here FULL")
+            audio_bytes = full_audio
+        else:
+            audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
+        # last_chunk_len = int(len(full_audio) * ratio)
+        # audio_bytes = full_audio[:-last_chunk_len]
+        # print("look here", len(audio_bytes),int(lastBlobStamp * 2.5132956))
         audio_bytes = np.array(audio_bytes)
+        
         x = torch.FloatTensor(audio_bytes)
-        print(self.tokenizer)
         input_values = self.tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
         logits = self.model(input_values).logits
         tokens = torch.argmax(logits, axis=-1)
@@ -38,17 +105,7 @@ class _Keyword_Spotting_Service:
         print(texts)
         return texts, len(audio_bytes)
 
-    def preprocess(self, file_path, num_mfcc=13, n_fft=2048, hop_length=512):
-        """Extract MFCCs from audio file.
-        :param file_path (str): Path of audio file
-        :param num_mfcc (int): # of coefficients to extract
-        :param n_fft (int): Interval we consider to apply STFT. Measured in # of samples
-        :param hop_length (int): Sliding window for STFT. Measured in # of samples
-        :return MFCCs (ndarray): 2-dim array with MFCC data of shape (# time steps, # coefficients)
-        """
-
-        # load audio file
-        return file_path
+    
 
 
 def Keyword_Spotting_Service():

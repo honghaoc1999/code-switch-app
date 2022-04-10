@@ -26,6 +26,45 @@ function printChunk(chunk) {
   });
 }
 
+function combineText(messageList) {
+  return messageList.join(" ");
+}
+
+// var chunkLenField = document.createElement("chunks-len");
+// chunkLenField.setAttribute("type", "hidden");
+// chunkLenField.value = 0;
+// var messages = [];
+
+var messageNum = 0;
+// var audioBytesLen = 0;
+var confirmButton;
+var rejectButton;
+var waitMessageBox;
+var record;
+var choiceButtons;
+
+function cleanUpButtonsAndWaitMessage() {
+  console.log("cleaning");
+  document.getElementById("transcribe-text").removeChild(waitMessageBox);
+  document.getElementById("transcribe-text").removeChild(choiceButtons);
+  record.disabled = false;
+}
+
+function autoCorrect() {
+  document.getElementById("transcribe-text-"+(messageNum-1)).innerHTML = document.getElementById("transcribe-text-"+(messageNum-1)+"-waitmessage").innerHTML;
+  cleanUpButtonsAndWaitMessage();
+}
+
+// if (confirmButton) {
+//   console.log("clicked confirm");
+//   confirmButton.onclick = autoCorrect;
+// }
+
+// if (rejectButton) {
+//   console.log("clicked ignore");
+//   rejectButton.onclick = cleanUpButtonsAndWaitMessage;
+// }
+
 function getCSRFToken() {
   let cookies = document.cookie.split(";")
   for (let i = 0; i < cookies.length; i++) {
@@ -36,6 +75,8 @@ function getCSRFToken() {
   }
   return "unknown";
 }
+
+
 
 if (navigator.mediaDevices) {
   console.log('getUserMedia supported.');
@@ -55,7 +96,7 @@ if (navigator.mediaDevices) {
       // console.log(chunks);
       // printChunk(chunks);
       // console.log(e.data);
-      processAudioChunk();
+      processAudioChunk(false);
       // console.log("finished processing chunks, clearing chunks now")
       // console.log(chunks);
       // console.log(e.data);
@@ -71,8 +112,7 @@ if (navigator.mediaDevices) {
     }
     
 
-    var record = document.getElementById("btn-toggle-audio");
-    var soundClips = document.getElementById("audio-clips");
+    record = document.getElementById("btn-toggle-audio");
     
     record.onclick = function() {
       if (recording) {
@@ -81,9 +121,17 @@ if (navigator.mediaDevices) {
         console.log("recorder stopped");
         record.style.background = "";
         record.style.color = "";
+        waitMessageBox = document.createElement("div");
+        waitMessageBox.id = "transcribe-text-"+messageNum+"-waitmessage";
+        waitMessageBox.innerHTML = "autocorrecting ...";
+        document.getElementById("transcribe-text").appendChild(waitMessageBox);
+        messageNum += 1;
       }
       else {
-        mediaRecorder.start(3000);
+        var messageBox = document.createElement("div");
+        messageBox.id = "transcribe-text-"+messageNum;
+        document.getElementById("transcribe-text").appendChild(messageBox);
+        mediaRecorder.start(1000);
         console.log(mediaRecorder.state);
         console.log("recorder started");
         record.style.background = "red";
@@ -92,10 +140,8 @@ if (navigator.mediaDevices) {
       recording = !recording;
     }
 
-    function processAudioChunk() {
-      console.log("data available after MediaRecorder.stop() called.");
-      var clipName = Date.now();
-      
+    function processAudioChunk(runFull) {
+      console.log("data available after MediaRecorder.stop() called.");      
       // var clipContainer = document.createElement('article');
       // var clipLabel = document.createElement('p');
       // var audio = document.createElement('audio');
@@ -139,6 +185,8 @@ if (navigator.mediaDevices) {
       data.append('sampleWidth', 2);
       data.append('nChannels', audioStreamMeta.channelCount);
       data.append("csrfmiddlewaretoken", getCSRFToken());
+      data.append("messageNum", messageNum);
+      data.append("runFull", runFull);
       console.log(audioStreamMeta.frameRate);
       console.log(audioStreamMeta.width);
       console.log(audioStreamMeta);
@@ -152,8 +200,52 @@ if (navigator.mediaDevices) {
             console.log(this.responseText);
             var jsonResponse = JSON.parse(this.responseText);
             if (jsonResponse["output"]) {
-              document.getElementById("transcribe-text").innerHTML = document.getElementById("transcribe-text").innerHTML + ' ' + jsonResponse["output"];
+              console.log("transcribe-text-"+jsonResponse["messageNum"]);
+              if (document.getElementById("transcribe-text-"+jsonResponse["messageNum"]) && recording) {
+                if (jsonResponse["messageNum"] == messageNum) {
+                  document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML + jsonResponse["output"];
+                }
+                else {
+                  document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = jsonResponse["output"];
+                }
+              }
+              else if (runFull) {
+                document.getElementById("transcribe-text-"+(jsonResponse["messageNum"]-1)+"-waitmessage").innerHTML = jsonResponse["output"];
+                choiceButtons = document.createElement("div");
+                choiceButtons.id = "choice-buttons";
+                confirmButton = document.createElement("BUTTON");
+                confirmButton.innerText = "Auto Correct";
+                rejectButton = document.createElement("BUTTON");
+                rejectButton.innerText = "Ignore";
+                record.disabled = true;
+                choiceButtons.appendChild(confirmButton);
+                choiceButtons.appendChild(rejectButton);
+                waitMessageBox.innerHTML = jsonResponse["output"];
+                document.getElementById("transcribe-text").appendChild(waitMessageBox);
+                document.getElementById("transcribe-text").appendChild(choiceButtons);
+                confirmButton.addEventListener("click", autoCorrect);
+                rejectButton.addEventListener("click", cleanUpButtonsAndWaitMessage);
+              }
             }
+            // if (jsonResponse["audioBytesLen"]) {
+            //   audioBytesLen = jsonResponse["audioBytesLen"];
+            // }
+            // var newChunk = false;
+            // if (jsonResponse["chunksNum"]) {
+            //   console.log(chunkLenField.value, jsonResponse["chunksNum"]);
+            //   newChunk = chunkLenField.value != jsonResponse["chunksNum"];
+            //   chunkLenField.value = jsonResponse["chunksNum"];
+            // }
+            // if (jsonResponse["output"]) {
+            //   if (newChunk) {
+            //     messages.push(jsonResponse["output"]);
+            //   }
+            //   else {
+            //     messages[-1] = jsonResponse["output"];
+            //   }
+            //   document.getElementById("transcribe-text").innerHTML = combineText(messages);
+            // }
+            
             
           }
       };
@@ -174,7 +266,7 @@ if (navigator.mediaDevices) {
     
 
     mediaRecorder.onstop = function(e) {
-      processAudioChunk();
+      processAudioChunk(true);
       // chunks = [header];
       chunks = [];
     }

@@ -16,6 +16,7 @@ print("reached view")
 # Create your views here.
 def recorderView(request):
     context = {}
+    model = asr_model.Keyword_Spotting_Service()
     return render(request, 'recorder.html', context)
 
 def convert_webm_to_wav(webmFile, wavFile):
@@ -27,16 +28,17 @@ def convert_webm_to_wav(webmFile, wavFile):
 def transcribeAudio(request):
     model = asr_model.Keyword_Spotting_Service()
     context = {}
-    print(1)
     serverReceiveTime = time.time()
     audioData = request.FILES['data']
     sampleRate = int(request.POST['frameRate'])
     channelCount = int(request.POST['nChannels'])
     lastBlobStamp = int(request.POST['lastlen'])
     sampleWidth = int(request.POST['sampleWidth'])
+    runFull = request.POST['runFull']
+    # lastAudioLen = int(request.POST['audioBytesLen'])
     
     blob = audioData.read()
-    print("curr len ", len(list(blob)), "last blob", lastBlobStamp)
+    print("curr len ", len(list(blob)), "last blob", lastBlobStamp, "runFull", runFull)
     webmFilePath = 'voice2text/audios/'+str(uuid.uuid1())+'.webm'
     with open(webmFilePath, 'wb') as f_aud:
         f_aud.write(blob)
@@ -49,7 +51,7 @@ def transcribeAudio(request):
     except:
         logging.exception('convert webm to wav failed')
     try:    
-        output, audioBytesLen = model.predict(wavFilePath, lastBlobStamp)
+        output, audioBytesLen = model.predict(wavFilePath, lastBlobStamp, runFull)
         print("last blob", lastBlobStamp, "curr blob", len(list(blob)), "wav len", audioBytesLen)
         # context['metadata'] = audioData.size
         # blob = audioData.read()
@@ -65,8 +67,9 @@ def transcribeAudio(request):
         context['server finish time'] = serverFinishTime
         context['output'] = output
         context['audioBytesLen'] = audioBytesLen
+        context['messageNum'] = int(request.POST['messageNum'])
         
-        os.remove(wavFilePath)
+        # os.remove(wavFilePath)
     except:
         os.remove(wavFilePath)
         logging.exception('predict failed')
