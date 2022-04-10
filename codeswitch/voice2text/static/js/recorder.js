@@ -30,6 +30,16 @@ function combineText(messageList) {
   return messageList.join(" ");
 }
 
+function getCurrText() {
+  var s = "";
+  for (let i = 0; i < nestedMessages.length; i++) {
+    for (let j = 0; j < nestedMessages[i].chunks.length; j++) {
+      s += nestedMessages[i].chunks[j];
+    }
+  }
+  return s;
+}
+
 // var chunkLenField = document.createElement("chunks-len");
 // chunkLenField.setAttribute("type", "hidden");
 // chunkLenField.value = 0;
@@ -42,6 +52,14 @@ var rejectButton;
 var waitMessageBox;
 var record;
 var choiceButtons;
+var autoCorrectOn = false;
+
+var nestedMessages = [{
+  chunks: [],
+  lastBlobSize: 0
+}];
+var counter = 0;
+var counterPeriod = 3;
 
 function cleanUpButtonsAndWaitMessage() {
   console.log("cleaning");
@@ -121,10 +139,13 @@ if (navigator.mediaDevices) {
         console.log("recorder stopped");
         record.style.background = "";
         record.style.color = "";
-        waitMessageBox = document.createElement("div");
-        waitMessageBox.id = "transcribe-text-"+messageNum+"-waitmessage";
-        waitMessageBox.innerHTML = "autocorrecting ...";
-        document.getElementById("transcribe-text").appendChild(waitMessageBox);
+        if (autoCorrectOn) {
+          waitMessageBox = document.createElement("div");
+          waitMessageBox.id = "transcribe-text-"+messageNum+"-waitmessage";
+          waitMessageBox.innerHTML = "autocorrecting ...";
+          document.getElementById("transcribe-text").appendChild(waitMessageBox);
+        }
+        
         messageNum += 1;
       }
       else {
@@ -141,7 +162,23 @@ if (navigator.mediaDevices) {
     }
 
     function processAudioChunk(runFull) {
-      console.log("data available after MediaRecorder.stop() called.");      
+      counter += 1;
+      var newPeriod = counter % counterPeriod == 0;
+      var overWriteLevel1Message = false;
+      var lastBlobSize = 0; 
+      var messageLevel1Index = nestedMessages.length - 1;
+      if (lastBlob != null) {
+        lastBlobSize = lastBlob.size;
+      }
+      if (newPeriod) {
+        nestedMessages.push({
+          chunks: [],
+          lastBlobSize: null
+        });
+        overWriteLevel1Message = true;
+      }
+      
+
       // var clipContainer = document.createElement('article');
       // var clipLabel = document.createElement('p');
       // var audio = document.createElement('audio');
@@ -163,10 +200,18 @@ if (navigator.mediaDevices) {
         data.append('lastlen', 0);
       }
       else {
-        data.append('lastlen', lastBlob.size);
+        if (newPeriod) {
+          data.append('lastlen', nestedMessages[messageLevel1Index].lastBlobSize);
+        }
+        else {
+          data.append('lastlen', lastBlob.size);
+        }
       }
-      console.log(chunks);
       lastBlob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus'});
+      if (newPeriod) {
+        console.log(nestedMessages[nestedMessages.length-1])
+        nestedMessages[nestedMessages.length - 1].lastBlobSize = lastBlob.size;
+      }
       console.log(lastBlob);
       // chunks = [];
     
@@ -187,45 +232,55 @@ if (navigator.mediaDevices) {
       data.append("csrfmiddlewaretoken", getCSRFToken());
       data.append("messageNum", messageNum);
       data.append("runFull", runFull);
+      // data.append("messageLevel1Index", messageLevel1Index);
+      // data.append("overWriteLevel1Message", overWriteLevel1Message);
       console.log(audioStreamMeta.frameRate);
       console.log(audioStreamMeta.width);
       console.log(audioStreamMeta);
       xhttp.send(data);
       
       xhttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
-            // var audiometa = document.createElement('audiometa');
-            // audiometa.innerHTML = this.responseText;
-            // clipContainer.appendChild(audiometa);    
+          if (this.readyState == 4 && this.status == 200) { 
             console.log(this.responseText);
             var jsonResponse = JSON.parse(this.responseText);
             if (jsonResponse["output"]) {
-              console.log("transcribe-text-"+jsonResponse["messageNum"]);
-              if (document.getElementById("transcribe-text-"+jsonResponse["messageNum"]) && recording) {
-                if (jsonResponse["messageNum"] == messageNum) {
-                  document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML + jsonResponse["output"];
-                }
-                else {
-                  document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = jsonResponse["output"];
-                }
+              if (overWriteLevel1Message) {
+                console.log(nestedMessages, messageLevel1Index);
+                nestedMessages[messageLevel1Index].chunks = [jsonResponse["output"]];
               }
-              else if (runFull) {
-                document.getElementById("transcribe-text-"+(jsonResponse["messageNum"]-1)+"-waitmessage").innerHTML = jsonResponse["output"];
-                choiceButtons = document.createElement("div");
-                choiceButtons.id = "choice-buttons";
-                confirmButton = document.createElement("BUTTON");
-                confirmButton.innerText = "Auto Correct";
-                rejectButton = document.createElement("BUTTON");
-                rejectButton.innerText = "Ignore";
-                record.disabled = true;
-                choiceButtons.appendChild(confirmButton);
-                choiceButtons.appendChild(rejectButton);
-                waitMessageBox.innerHTML = jsonResponse["output"];
-                document.getElementById("transcribe-text").appendChild(waitMessageBox);
-                document.getElementById("transcribe-text").appendChild(choiceButtons);
-                confirmButton.addEventListener("click", autoCorrect);
-                rejectButton.addEventListener("click", cleanUpButtonsAndWaitMessage);
+              else {
+                console.log(nestedMessages, messageLevel1Index);
+                nestedMessages[messageLevel1Index].chunks.push(jsonResponse["output"]);
               }
+              document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = getCurrText();
+              // console.log("transcribe-text-"+jsonResponse["messageNum"]);
+              // if (document.getElementById("transcribe-text-"+jsonResponse["messageNum"]) && recording) {
+              //   if (jsonResponse["messageNum"] == messageNum) {
+              //     document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML + jsonResponse["output"];
+              //   }
+              //   else {
+              //     document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = jsonResponse["output"];
+              //   }
+              // }
+              // else if (runFull) {
+              //   document.getElementById("transcribe-text-"+(jsonResponse["messageNum"]-1)+"-waitmessage").innerHTML = jsonResponse["output"];
+              //   if (autoCorrectOn) {
+              //     choiceButtons = document.createElement("div");
+              //     choiceButtons.id = "choice-buttons";
+              //     confirmButton = document.createElement("BUTTON");
+              //     confirmButton.innerText = "Auto Correct";
+              //     rejectButton = document.createElement("BUTTON");
+              //     rejectButton.innerText = "Ignore";
+              //     record.disabled = true;
+              //     choiceButtons.appendChild(confirmButton);
+              //     choiceButtons.appendChild(rejectButton);
+              //     waitMessageBox.innerHTML = jsonResponse["output"];
+              //     document.getElementById("transcribe-text").appendChild(waitMessageBox);
+              //     document.getElementById("transcribe-text").appendChild(choiceButtons);
+              //     confirmButton.addEventListener("click", autoCorrect);
+              //     rejectButton.addEventListener("click", cleanUpButtonsAndWaitMessage);
+              //   }
+              // }
             }
             // if (jsonResponse["audioBytesLen"]) {
             //   audioBytesLen = jsonResponse["audioBytesLen"];
@@ -269,6 +324,11 @@ if (navigator.mediaDevices) {
       processAudioChunk(true);
       // chunks = [header];
       chunks = [];
+      nestedMessages = [{
+        chunks: [],
+        lastBlobSize: 0
+      }];
+      counter = 0;
     }
 
     // mediaRecorder.ondataavailable = function(e) {

@@ -35,6 +35,8 @@ def transcribeAudio(request):
     lastBlobStamp = int(request.POST['lastlen'])
     sampleWidth = int(request.POST['sampleWidth'])
     runFull = request.POST['runFull']
+    # messageLevel1Index = request.POST['messageLevel1Index']
+    # overWriteLevel1Message = request.POST['overWriteLevel1Message']
     # lastAudioLen = int(request.POST['audioBytesLen'])
     
     blob = audioData.read()
@@ -53,23 +55,15 @@ def transcribeAudio(request):
     try:    
         output, audioBytesLen = model.predict(wavFilePath, lastBlobStamp, runFull)
         print("last blob", lastBlobStamp, "curr blob", len(list(blob)), "wav len", audioBytesLen)
-        # context['metadata'] = audioData.size
-        # blob = audioData.read()
-        # audio = wave.open('voice2text/audios/test3.wav', 'wb')
-        # audio.setnchannels(2)
-        # print(blob)
-        # audio.setsampwidth(2)
-        # audio.setframerate(44100)
-        
-        # audio.writeframes(blob) #on playing 'test.wav' only noise can be heard
         serverFinishTime = time.time()
         context['server receive time'] = serverReceiveTime
         context['server finish time'] = serverFinishTime
         context['output'] = output
         context['audioBytesLen'] = audioBytesLen
         context['messageNum'] = int(request.POST['messageNum'])
+        # context['messageLevel1Index'] = messageLevel1Index
+        # context['overWriteLevel1Message'] = overWriteLevel1Message
         
-        # os.remove(wavFilePath)
     except:
         os.remove(wavFilePath)
         logging.exception('predict failed')
