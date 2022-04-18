@@ -20,5 +20,9 @@ from voice2text import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.recorderView, name='recorderView'),
+    path('6s_retry_recorder', views.periodic6sRetryRecorder, name='6s_retry_recorder'),
+    path('3s_retry_recorder', views.periodicRetryRecorder, name='3s_retry_recorder'),
+    path('entire_retry', views.entireRetryRecorder, name='entire_retry'),
+    path('silent_chunking', views.silentChunkRecorder, name='silent_chunking'),
     path('transcribeAudio', views.transcribeAudio, name='transcribeAudio')
 ]

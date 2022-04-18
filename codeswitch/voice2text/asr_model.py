@@ -4,7 +4,10 @@ import soundfile as sf
 from scipy.io.wavfile import read
 import numpy as np
 from pydub import AudioSegment
-from pydub.silence import split_on_silence
+from pydub.silence import split_on_silence, detect_nonsilent
+import uuid
+from autocorrect import Speller
+import re
 
 class _Keyword_Spotting_Service:
     """Singleton class for keyword spotting inference with trained models.
@@ -16,7 +19,7 @@ class _Keyword_Spotting_Service:
     _instance = None
 
 
-    def preprocess(self, file_path, num_mfcc=13, n_fft=2048, hop_length=512):
+    def preprocess(self, file_path, silentChunkNum, lastChunk, num_mfcc=13, n_fft=2048, hop_length=512):
         """Extract MFCCs from audio file.
         :param file_path (str): Path of audio file
         :param num_mfcc (int): # of coefficients to extract
@@ -35,21 +38,41 @@ class _Keyword_Spotting_Service:
         
         # Split track where the silence is 2 seconds or more and get chunks using 
         # the imported function.
+        print("song.dBFS", song.dBFS)
         chunks = split_on_silence (
             # Use the loaded audio.
             song, 
             # Specify that a silent chunk must be at least 2 seconds or 2000 ms long.
-            min_silence_len = 500,
-            silence_thresh = song.dBFS - 16
+            min_silence_len = 150,
+            silence_thresh = song.dBFS - 16,
+            keep_silence = True,
+            seek_step=1
             # Consider a chunk silent if it's quieter than -16 dBFS.
             # (You may want to adjust this parameter.)
-            
         )
-        print("audio", len(song), "chunks", chunks, "last chunk", len(chunks[-1]))
-        # chunk_lens = map(len, chunks)
-        ratio = len(chunks[-1])/len(song)
-        print("ratio", ratio)
-        return ratio
+        ranges = detect_nonsilent(
+            song, 
+            min_silence_len=150, 
+            silence_thresh=song.dBFS-16, 
+            seek_step=1
+        )
+        print("sanity check: ",len(chunks), (len(ranges)))
+        rightMostTranscribeChunkIndex = None
+        if lastChunk == 'true':
+            rightMostTranscribeChunkBound = len(chunks)
+            print("this is last chunk")
+        else:
+            print("silent chunks num: ", silentChunkNum, len(chunks))
+            rightMostTranscribeChunkBound = len(chunks) - 1
+        
+        chunk_filepaths = []
+        for i in range(silentChunkNum, rightMostTranscribeChunkBound):
+            chunk_filepath = "voice2text/chunks/" + str(i) + '_' + str(uuid.uuid1()) + '.wav'
+            chunks[i].export(out_f = chunk_filepath, 
+                        format = "wav")
+            chunk_filepaths.append(chunk_filepath)
+        
+        return chunk_filepaths, len(chunks) - 1
         
 
         # Process each chunk with your parameters
@@ -70,8 +93,43 @@ class _Keyword_Spotting_Service:
         #         bitrate = "192k",
         #         format = "mp3"
         #     )
+    def correct_eng_chn_mix_seg(self, s, speller):
+        res = []
+        last_bound = 0
+        for i in range(len(s)):
+            if i == 0:
+                continue
+            if '\u4e00' <= s[i] <= '\u9fef':
+                if not '\u4e00' <= s[i-1] <= '\u9fef':
+                    res.append(speller(s[last_bound:i]))
+                    last_bound = i
+            else:
+                if '\u4e00' <= s[i-1] <= '\u9fef':
+                    res.append(s[last_bound:i])
+                    last_bound = i
+        if '\u4e00' <= s[last_bound] <= '\u9fef':
+            res.append(s[last_bound:])
+        else:
+            res.append(speller(s[last_bound:]))
+        print("corrected mix: ", ' '.join(res))
+        return ' '.join(res)
 
-    def predict(self, file_path, lastBlobStamp, runFull):
+
+
+    def cleanup(self, text):
+        text = re.sub("\嗯+", " um ", text[0])
+        text = re.sub("\呃+", " um ", text)
+        segments = text.split(' ')
+        spell = Speller()
+        for i in range(len(segments)):
+            if len(re.findall(r'[\u4e00-\u9fff]+',segments[i])) == 0:
+                segments[i] = spell(segments[i].lower())
+            else:
+                segments[i] = self.correct_eng_chn_mix_seg(segments[i], spell)
+            
+        return [' '.join(segments)]
+
+    def predict(self, file_path, lastBlobStamp, runFull, lastChunk=None, silentChunkNum=None, runEng="false"):
         """
         :param file_path (str): Path to audio file to predict
         :return predicted_keyword (str): Keyword predicted by the model
@@ -84,26 +142,55 @@ class _Keyword_Spotting_Service:
         #     print(duration)
         # ratio = self.preprocess(file_path)
         full_audio = read(file_path)[1]
-
-        # print("last chunk len: ", last_chunk_len, " whole file len: ", len(read(file_path)[1]))
-        # print("compare: ", len(read(file_path)[1]), lastBlobStamp)
+        newSilentChunkNum = None
         if runFull == 'true':
-            print("reached here FULL")
             audio_bytes = full_audio
         else:
-            audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
-        # last_chunk_len = int(len(full_audio) * ratio)
-        # audio_bytes = full_audio[:-last_chunk_len]
-        # print("look here", len(audio_bytes),int(lastBlobStamp * 2.5132956))
+            if silentChunkNum != None:
+                chunk_filepaths, newSilentChunkNum = self.preprocess(file_path, silentChunkNum, lastChunk)
+                print("right after process: ", newSilentChunkNum)
+                if len(chunk_filepaths) == 0:
+                    return "", -1, newSilentChunkNum
+                audio_bytes = []
+                for filepath in chunk_filepaths:
+                    print("check here", type(read(filepath)[1]), len(read(filepath)[1]))
+                    if len(audio_bytes) == 0:
+                        audio_bytes = read(filepath)[1]
+                    else:
+                        audio_bytes = np.concatenate((audio_bytes,read(filepath)[1]))
+
+            else: 
+                audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
+            # last_chunk_len = int(len(full_audio) * ratio)
+            # audio_bytes = full_audio[:-last_chunk_len]
+            # print("look here", len(audio_bytes),int(lastBlobStamp * 2.5132956))
         audio_bytes = np.array(audio_bytes)
-        
         x = torch.FloatTensor(audio_bytes)
-        input_values = self.tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
-        logits = self.model(input_values).logits
-        tokens = torch.argmax(logits, axis=-1)
-        texts = self.tokenizer.batch_decode(tokens)
-        print(texts)
-        return texts, len(audio_bytes)
+        if runEng == 'true' or runFull == 'true':
+            
+            input_values = self.tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
+            logits = self.model(input_values).logits
+            tokens = torch.argmax(logits, axis=-1)
+            print("audiolen vs. logits vs. tokens vs. input_values", len(audio_bytes), logits.shape, tokens.shape, input_values.shape)
+            if runFull == 'true':
+                np.savetxt('model_output.txt', tokens.numpy())
+            texts = self.tokenizer.batch_decode(tokens)
+            texts = self.cleanup(texts)
+            if len(re.findall(r'[\u4e00-\u9fff]+',texts[0])) == 0:
+                eng_input_values = self.eng_tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
+                eng_logits = self.eng_model(eng_input_values).logits
+                eng_tokens = torch.argmax(eng_logits, axis=-1)
+                eng_texts = self.eng_tokenizer.batch_decode(eng_tokens)
+                eng_texts = self.cleanup(eng_texts)
+                texts = eng_texts
+
+        else:
+            input_values = self.simple_tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
+            logits = self.simple_model(input_values).logits
+            tokens = torch.argmax(logits, axis=-1)
+            texts = self.simple_tokenizer.batch_decode(tokens)
+            texts = self.cleanup(texts)
+        return texts, len(audio_bytes), newSilentChunkNum
 
     
 
@@ -112,18 +199,24 @@ def Keyword_Spotting_Service():
     """Factory function for Keyword_Spotting_Service class.
     :return _Keyword_Spotting_Service._instance (_Keyword_Spotting_Service):
     """
-
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
         # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn')
         # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn')
-        # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-base-960h')
-        # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base-960h')
+        _Keyword_Spotting_Service.simple_model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-base-960h')
+        _Keyword_Spotting_Service.simple_tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base-960h')
         # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
         # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
-        _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('GleamEyeBeast/ascend')
-        _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('GleamEyeBeast/ascend')
+        # _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('GleamEyeBeast/ascend')
+        # _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('GleamEyeBeast/ascend')
+        _Keyword_Spotting_Service.model = Wav2Vec2ForCTC.from_pretrained('ntoldalagi/nick_asr_v2')
+        _Keyword_Spotting_Service.tokenizer = Wav2Vec2Processor.from_pretrained('ntoldalagi/nick_asr_v2')
+        _Keyword_Spotting_Service.eng_model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
+        _Keyword_Spotting_Service.eng_tokenizer = Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')
+        # _Keyword_Spotting_Service.lid_model = Wav2Vec2ForCTC.from_pretrained('ntoldalagi/nick_asr_LID')
+        # _Keyword_Spotting_Service.lid_tokenizer = Wav2Vec2Processor.from_pretrained('ntoldalagi/nick_asr_LID')
+        
         print("LOADING MODEL")
     return _Keyword_Spotting_Service._instance
 
