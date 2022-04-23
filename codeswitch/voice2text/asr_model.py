@@ -1,7 +1,7 @@
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 import soundfile as sf
-from scipy.io.wavfile import read
+from scipy.io.wavfile import read, write
 import numpy as np
 from pydub import AudioSegment
 from pydub.silence import split_on_silence, detect_nonsilent
@@ -129,7 +129,7 @@ class _Keyword_Spotting_Service:
             
         return [' '.join(segments)]
 
-    def predict(self, file_path, lastBlobStamp, runFull, lastChunk=None, silentChunkNum=None, runEng="false"):
+    def predict(self, file_path, lastBlobStamp, runFull, lastChunk=None, silentChunkNum=None, runEng="true"):
         """
         :param file_path (str): Path to audio file to predict
         :return predicted_keyword (str): Keyword predicted by the model
@@ -160,7 +160,10 @@ class _Keyword_Spotting_Service:
                         audio_bytes = np.concatenate((audio_bytes,read(filepath)[1]))
 
             else: 
-                audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
+                # audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
+                audio_bytes = full_audio[int(lastBlobStamp * 2.48):]
+
+                write("voice2text/audio_chunks/"+file_path[len("voice2text/audios/"):], 16000, audio_bytes)
             # last_chunk_len = int(len(full_audio) * ratio)
             # audio_bytes = full_audio[:-last_chunk_len]
             # print("look here", len(audio_bytes),int(lastBlobStamp * 2.5132956))
@@ -171,9 +174,10 @@ class _Keyword_Spotting_Service:
             input_values = self.tokenizer(x, sampling_rate=16000, return_tensors='pt', padding='longest').input_values
             logits = self.model(input_values).logits
             tokens = torch.argmax(logits, axis=-1)
-            print("audiolen vs. logits vs. tokens vs. input_values", len(audio_bytes), logits.shape, tokens.shape, input_values.shape)
-            if runFull == 'true':
-                np.savetxt('model_output.txt', tokens.numpy())
+            # print("audiolen vs. logits vs. tokens vs. input_values", len(audio_bytes), logits.shape, tokens.shape, input_values.shape)
+            # print(tokens, self.tokenizer.convert_ids_to_tokens(list(tokens)))
+            # if runFull == 'true':
+            #     np.savetxt('model_output.txt', tokens.numpy())
             texts = self.tokenizer.batch_decode(tokens)
             texts = self.cleanup(texts)
             if len(re.findall(r'[\u4e00-\u9fff]+',texts[0])) == 0:

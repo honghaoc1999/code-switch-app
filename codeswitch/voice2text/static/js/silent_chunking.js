@@ -44,6 +44,11 @@ var record;
 var choiceButtons;
 var silentChunkMessages = [];
 var chunkNumBackend = 0;
+let audioCtx = new AudioContext();
+let source;
+let analyzer;
+let javascriptNode;
+let amplitudeArray;
 
 function cleanUpButtonsAndWaitMessage() {
   console.log("cleaning");
@@ -99,6 +104,7 @@ if (navigator.mediaDevices) {
       // console.log(chunks);
       // printChunk(chunks);
       // console.log(e.data);
+      console.log(source);
       processAudioChunk(false, false);
       // console.log("finished processing chunks, clearing chunks now")
       // console.log(chunks);
@@ -134,6 +140,14 @@ if (navigator.mediaDevices) {
         var messageBox = document.createElement("div");
         messageBox.id = "transcribe-text-"+messageNum;
         document.getElementById("transcribe-text").appendChild(messageBox);
+        source = audioCtx.createMediaStreamSource(stream);
+        analyzer = source.context.createAnalyser();
+        amplitudeArray = new Uint8Array(analyzer.frequencyBinCount);
+        javascriptNode = audioCtx.createScriptProcessor(16000, 1, 1);
+        javascriptNode.onaudioprocess = function () {
+          // get the Time Domain data for this sample
+          analyserNode.getByteTimeDomainData(amplitudeArray);
+        }
         mediaRecorder.start(2000);
         console.log(mediaRecorder.state);
         console.log("recorder started");
@@ -160,6 +174,8 @@ if (navigator.mediaDevices) {
       // clipContainer.appendChild(deleteButton);
       // soundClips.appendChild(clipContainer);
       // audio.controls = true;
+      
+      console.log(amplitudeArray);
       var data = new FormData();
       var audioStreamMeta = stream.getAudioTracks()[0].getSettings();
       if (lastBlob == null) {

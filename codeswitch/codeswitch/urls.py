@@ -24,5 +24,8 @@ urlpatterns = [
     path('3s_retry_recorder', views.periodicRetryRecorder, name='3s_retry_recorder'),
     path('entire_retry', views.entireRetryRecorder, name='entire_retry'),
     path('silent_chunking', views.silentChunkRecorder, name='silent_chunking'),
-    path('transcribeAudio', views.transcribeAudio, name='transcribeAudio')
+    path('silent_web_audio_api', views.silentChunkWebAudioAPIRecorder, name='silent_web_audio_api'),
+    path('combined_model', views.combinedModelRecorder, name='combined_model'),
+    path('transcribeAudio', views.transcribeAudio, name='transcribeAudio'),
+    path('transcribeAudioCombined', views.transcribeAudioCombined, name='transcribeAudioCombined')
 ]

@@ -7,10 +7,13 @@ import base64
 import subprocess
 import time
 import voice2text.asr_model as asr_model
+import voice2text.wav2vec2 as combined_model
 import os
 import uuid
 import logging
 import re
+from scipy.io.wavfile import read
+import numpy as np
 # LOG_FILENAME = 'voice2text/logging_example.out'
 # logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 print("reached view")
@@ -30,10 +33,21 @@ def periodic6sRetryRecorder(request):
     model = asr_model.Keyword_Spotting_Service()
     return render(request, '6s_retry_recorder.html', context)
 
+def silentChunkWebAudioAPIRecorder(request):
+    context = {}
+    model = asr_model.Keyword_Spotting_Service()
+    return render(request, 'silent_web_audio_api.html', context)
+
 def entireRetryRecorder(request):
     context = {}
     model = asr_model.Keyword_Spotting_Service()
     return render(request, 'entire_retry.html', context)
+
+def combinedModelRecorder(request):
+    context = {}
+    # model = asr_model.Keyword_Spotting_Service()
+    model = combined_model.Combined_Model()
+    return render(request, 'combined_model.html', context)
 
 def silentChunkRecorder(request):
     context = {}
@@ -45,7 +59,7 @@ def convert_webm_to_wav(webmFile, wavFile):
     subprocess.run(command,stdout=subprocess.PIPE,stdin=subprocess.PIPE)
 
 
-# @csrf_exempt
+@csrf_exempt
 def transcribeAudio(request):
     model = asr_model.Keyword_Spotting_Service()
     context = {}
@@ -94,6 +108,64 @@ def transcribeAudio(request):
             context['newSilentChunkNum'] = -1
         else:
             context['newSilentChunkNum'] = newSilentChunkNum
+        os.remove(wavFilePath)
+        os.remove(webmFilePath)
+        # context['messageLevel1Index'] = messageLevel1Index
+        # context['overWriteLevel1Message'] = overWriteLevel1Message
+        
+    except:
+        os.remove(wavFilePath)
+        os.remove(webmFilePath)
+        logging.exception('predict failed')
+    return JsonResponse(context)
+
+# @csrf_exempt
+def transcribeAudioCombined(request):
+    model = combined_model.Combined_Model()
+    context = {}
+    serverReceiveTime = time.time()
+    audioData = request.FILES['data']
+    sampleRate = int(request.POST['frameRate'])
+    channelCount = int(request.POST['nChannels'])
+    lastBlobStamp = int(request.POST['lastlen'])
+    sampleWidth = int(request.POST['sampleWidth'])
+    runFull = request.POST['runFull']
+    if 'silentChunkNum' in request.POST:
+        silentChunkNum = int(request.POST['silentChunkNum'])
+    if 'lastChunk' in request.POST:
+        lastChunk = request.POST['lastChunk']
+    # messageLevel1Index = request.POST['messageLevel1Index']
+    # overWriteLevel1Message = request.POST['overWriteLevel1Message']
+    # lastAudioLen = int(request.POST['audioBytesLen'])
+    
+    blob = audioData.read()
+    print("curr len ", len(list(blob)), "last blob", lastBlobStamp, "runFull", runFull)
+    webmFilePath = 'voice2text/audios/'+str(uuid.uuid1())+'.webm'
+    with open(webmFilePath, 'wb') as f_aud:
+        f_aud.write(blob)
+    print("done")
+    wavFilePath = webmFilePath[:-5] + '.wav'
+    try:
+        convert_webm_to_wav(webmFilePath, wavFilePath)
+
+    except:
+        logging.exception('convert webm to wav failed')
+    fullAudio = read(wavFilePath)[1]
+    convertedArray = np.array(fullAudio).astype(np.double)
+    try:    
+        if 'silentDetectionOn' in request.POST:
+            output = model.predict(convertedArray)
+        elif 'runEng' in request.POST:
+            output = model.predict(convertedArray)
+        else:
+            output = model.predict(convertedArray)
+        # print("last blob", lastBlobStamp, "curr blob", len(list(blob)), "wav len", audioBytesLen)
+        serverFinishTime = time.time()
+        context['server receive time'] = serverReceiveTime
+        context['server finish time'] = serverFinishTime
+        context['output'] = output
+        context['messageNum'] = int(request.POST['messageNum'])
+        context['newSilentChunkNum'] = -1
         os.remove(wavFilePath)
         os.remove(webmFilePath)
         # context['messageLevel1Index'] = messageLevel1Index
