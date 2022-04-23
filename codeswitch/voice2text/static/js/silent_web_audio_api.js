@@ -49,6 +49,7 @@ var recording = false;
 var silentInstancesCnt = 0;
 var nonSilentInstancesCnt = 0;
 var indexed_transcript_chunks = [];
+var furtherest_chunk_len = 0;
 
 function cleanUpButtonsAndWaitMessage() {
   console.log("cleaning");
@@ -193,7 +194,8 @@ if (navigator.mediaDevices) {
       // soundClips.appendChild(clipContainer);
       // audio.controls = true;
       // volumeCallback();
-      if (runFull || silentInstancesCnt >= 5) {
+      console.log("furtherest_chunk_len vs indexed_transcript_chunks.length", furtherest_chunk_len, indexed_transcript_chunks.length)
+      if (runFull || (silentInstancesCnt >= 5 && furtherest_chunk_len <= indexed_transcript_chunks.length)) {
         silentInstancesCnt = 0;
         if (nonSilentInstancesCnt < 5 && !runFull) {
           return;
@@ -201,12 +203,13 @@ if (navigator.mediaDevices) {
         nonSilentInstancesCnt = 0;
         var data = new FormData();
         var audioStreamMeta = stream.getAudioTracks()[0].getSettings();
-        if (lastBlob == null) {
+        if (indexed_transcript_chunks.length == 0) {
           data.append('lastlen', 0);
         }
         else {
-          data.append('lastlen', lastBlob.size);
+          data.append('lastlen', indexed_transcript_chunks[indexed_transcript_chunks.length-1][2]);
         }
+        furtherest_chunk_len += 1;
         console.log(chunks);
         lastBlob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus'});
         console.log(lastBlob);
@@ -244,7 +247,7 @@ if (navigator.mediaDevices) {
               if (jsonResponse["output"]) {
                 console.log("transcribe-text-"+jsonResponse["messageNum"]);
                 if (document.getElementById("transcribe-text-"+jsonResponse["messageNum"]) && recording) {
-                  indexed_transcript_chunks.push([jsonResponse["output"], jsonResponse["server receive time"]]);
+                  indexed_transcript_chunks.push([jsonResponse["output"], jsonResponse["server receive time"], jsonResponse["fullLen"]]);
                   indexed_transcript_chunks = indexed_transcript_chunks.sort((a, b) => a[1] - b[1]);
                   if (jsonResponse["messageNum"] == messageNum) {
                     document.getElementById("transcribe-text-"+jsonResponse["messageNum"]).innerHTML = combineText(indexed_transcript_chunks);
@@ -270,6 +273,7 @@ if (navigator.mediaDevices) {
                   confirmButton.addEventListener("click", autoCorrect);
                   rejectButton.addEventListener("click", cleanUpButtonsAndWaitMessage);
                   indexed_transcript_chunks = [];
+                  furtherest_chunk_len = 0;
                 }
               }  
             }

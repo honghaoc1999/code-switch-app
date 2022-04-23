@@ -161,7 +161,7 @@ class _Keyword_Spotting_Service:
 
             else: 
                 # audio_bytes = full_audio[int(lastBlobStamp * 2.51329556):]
-                audio_bytes = full_audio[int(lastBlobStamp * 2.48):]
+                audio_bytes = full_audio[int(lastBlobStamp):]
 
                 write("voice2text/audio_chunks/"+file_path[len("voice2text/audios/"):], 16000, audio_bytes)
             # last_chunk_len = int(len(full_audio) * ratio)
@@ -194,7 +194,7 @@ class _Keyword_Spotting_Service:
             tokens = torch.argmax(logits, axis=-1)
             texts = self.simple_tokenizer.batch_decode(tokens)
             texts = self.cleanup(texts)
-        return texts, len(audio_bytes), newSilentChunkNum
+        return texts, len(full_audio), newSilentChunkNum
 
     
 

@@ -104,6 +104,7 @@ def transcribeAudio(request):
         context['output'] = output
         context['audioBytesLen'] = audioBytesLen
         context['messageNum'] = int(request.POST['messageNum'])
+        context['fullLen'] = audioBytesLen
         if newSilentChunkNum == None:
             context['newSilentChunkNum'] = -1
         else:
@@ -166,6 +167,7 @@ def transcribeAudioCombined(request):
         context['output'] = output
         context['messageNum'] = int(request.POST['messageNum'])
         context['newSilentChunkNum'] = -1
+        
         os.remove(wavFilePath)
         os.remove(webmFilePath)
         # context['messageLevel1Index'] = messageLevel1Index
